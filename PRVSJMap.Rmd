@@ -1,0 +1,71 @@
+---
+title: "PuertoRicoMap"
+author: "Normandie Gonzalez-Orellana"
+date: "1/1/2020"
+output: html_document
+---
+
+I am going to use pre-existing data on packages and databases + data that I collected directrly from Google Earth to try and create a better Puerto Rico Map.  This is because the existing data for Puerto Rico Map on R is not good and it only has the big island, Vieques and Mona, but the archipelago counts with more islands. Im going to start by adding the Old San Juan's islet, which is at the north-east of Puerto Rico.  
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+The preexisting data I am going to use is under the 'map_data' function on the package 'ggplot2'.
+```{r}
+pr <- map_data("world", region = "Puerto Rico")
+```
+
+We use 'geom_map' to add the figure of the territory on a coordinated plane.
+```{r, fig.width = 12, fig.height = 3}
+ggplot() +
+  geom_map(aes(long, lat, map_id = region), fill = "darkgreen",  map = pr, data = pr) 
+```
+
+In this figure we can see that the data only shows the big island of Puerto Rico, Vieques and Mona.  It is lacking Culebra and Desecheo.  another problem that I have with this, and this is a particular problem for my ongoing research, is that this figure doesn't show the Old San Juan's islet.  So the first thing I'm going to add is this islet.
+
+To do this I'm going to have to create the islet and then place it on top of the already existing figure. To create the islet i'm going to have to draw it using 'geom_polygon'.  The first step for this is to have the coordinates of the islet so I can tell 'ggplot2' where is the islet and its shape.  For this, I'm sure that we can find the data in other ways but this was the way I decided to do it at the moment, I used 'GoogleEarth' to collect multiple points around the islet to make up its shape.  The data is in the next spreadsheet that contains the latitude, longitude and an order.  The order is just to let 'ggplot2' know the direction in which it should unite the points to draw the polygon.
+
+```{r}
+library(readxl)
+VSJMap <- read_xlsx("VSJMap.xlsx")
+
+VSJMap
+```
+
+```{r}
+ggplot(VSJMap, aes(longitud, latitud))+
+  geom_polygon(fill = "darkgreen")
+```
+
+Now, lets put everything together.
+
+```{r, fig.width = 12, fig.height = 3}
+ggplot() +
+  geom_map(aes(long, lat, map_id = region), fill = "darkgreen",  map = pr, data = pr)+
+  geom_polygon(data = VSJMap, aes(longitud, latitud), fill = "darkgreen")
+```
+
+There's another problem.  The Puerto Rico map from the 'geom_map' data collides with my map of the Old San Juan's islet.  The esiest way to fix this at the moment would be to move the big island down.  To do that I will use 'tidyverse'.  Let me remind you that at the beginning of this document I saved the data for the Puerto Rico map provided by 'geom_map' in an object that I called "pr".  Let's look at it:
+
+```{r}
+pr
+```
+
+Now, lets do some magic with the tidyverse:
+
+```{r}
+pr2 <- pr %>% 
+  mutate(lat = lat-.0108)
+```
+
+What I did in the previous code with 'tidyverse' was to substract a little bit (.0108) from the latitude so the map figure would be lower on the ccordinated plane and I saved this in a new object that I called "pr2".  Now I'm going to do the map again, but this time instead of using "pr" I'm going to use "pr2":
+
+```{r, fig.width = 12, fig.height = 3}
+ggplot() +
+  geom_map(aes(long, lat, map_id = region), fill = "darkgreen",  map = pr2, data = pr)+
+  geom_polygon(data = VSJMap, aes(longitud, latitud), fill = "darkgreen")
+```
+
+And there you have it.  A map of Puerto Rico that includes Old San Juan's islet.  This is not much, but it is the beginning.  We need more accurate maps of Puerto Rico, so we can do something prettier.  And also, we need a map with the municipalities.  I am sure there must be a database that has all this coordinates, and we would just have to use that databese to create the maps, but in the meanwhile, I have what I need for my research.  Now, you could use 'leaflet' to visualize your data on a map, but because it is an interactive map, it is not good for publications.  That is why I'm going to keep working on this map, and try to make it more accurate so we can use ir on publications.
